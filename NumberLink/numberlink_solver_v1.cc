@@ -50,7 +50,7 @@ class NumberLink {
 	Distance height_;
 
 	NumberLink(const Distance width, const Distance height):
-	    width_(width), height_(height), size_((size_t)width * height),
+	    width_(width), height_(height), size_((CellKey)width * height),
 	    cell_x_(size_), cell_y_(size_), table_(size_),
 	    keys_(size_), mates_(size_), start_(size_ + 1),
 	    connected_x_(size_), connected_y_(size_), memo_(size_) {}
@@ -82,7 +82,7 @@ class NumberLink {
 		}
 
 		// Pre-compute CellKey to look back for every cell
-		for (CellPosition i = 0; i < size_; i++) {
+		for (CellKey i = 0; i < size_; i++) {
 			Distance x = cell_x_[i], y = cell_y_[i];
 			start_[i] = 0 < y ? GetCellKey(x, y - 1) :
 			                    (0 < x ? GetCellKey(x - 1, y) : 0);
@@ -136,7 +136,7 @@ class NumberLink {
 		CellKey left_cell_key = -1, up_cell_key = -1;
 		if (0 < x) left_cell_key = GetCellKey(x - 1, y);
 		if (0 < y) up_cell_key = GetCellKey(x, y - 1);
-		int revert_point = mate_stack_.size();
+		size_t revert_point = mate_stack_.size();
 		// Connect the cell with nothing
 		solution_count += Solve(cell_key + 1);
 		// Connect the cell with the upper cell
@@ -195,13 +195,13 @@ class NumberLink {
 	}
 
  private:
-	CellPosition size_;
+	CellKey size_;
 	stack< pair<CellKey, CellKey> > mate_stack_;
-	vector< map<vector<CellKey>, double> > memo_;
 	vector<Distance> cell_x_, cell_y_;
 	vector<CellNumber> table_;
 	vector<CellKey> keys_, mates_, start_;
 	vector<bool> connected_x_, connected_y_;
+	vector< map<vector<CellKey>, double> > memo_;
 	bool solved_;
 
 	int ChangeMates(const CellKey cell_key, const CellKey cell_value) {
@@ -214,7 +214,7 @@ class NumberLink {
 		return last_stack_size;
 	}
 
-	int RevertMates(const int stack_size) {
+	void RevertMates(const size_t stack_size) {
 		for (; stack_size < mate_stack_.size(); mate_stack_.pop())
 		    mates_[mate_stack_.top().first] = mate_stack_.top().second;
 	}

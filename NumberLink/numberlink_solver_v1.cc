@@ -168,10 +168,6 @@ class NumberLink {
 		return solution_count;
 	}
 
-	void ColoredPrint() {
-	
-	}
-
 	void Print() {
 		for (Distance y = 0; y <= height_; y++) {
 			for (Distance x = 0; x < width_; x++) {

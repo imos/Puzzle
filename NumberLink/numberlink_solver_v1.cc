@@ -1,9 +1,11 @@
+// numberlink_solver - Number Link Solver based on ZDD.
+//
 // Copyright (C) 2011 Kentaro Imajo. All rights reserved.
 // Author: Kentaro Imajo (Twitter: imos)
 //
 // This program uses special ordered cell keys. From the upper-left-most cell
 // to bottom-right-most cell, it traces every cell with diagonal lines from
-// upper-right to bottom-left. For 4x4 table, we uses the order that is denoted
+// upper-right to bottom-left. For 4x4 table, we use the order that is denoted
 // in the following table.
 //   00 01 03 06
 //   02 04 07 10
@@ -14,8 +16,8 @@
 // should have `width' and `height' in this order with a space delimiter in
 // the first line, and each of the following height lines should have width
 // integers. Zeroes represent blank cells, and one or more represent
-// themselves. For the Number Link (the left figure), you should use the input
-// (the right figure).
+// themselves. For the NumberLink problem (the left figure), you should use the
+// input (the right figure).
 //
 //   +---+---+---+---+  Standard Input:
 //   | 1           2 |  4 3
@@ -65,7 +67,7 @@ class NumberLink {
 		Distance x = 0, y = 0;
 		CellKey cell_key = 0;
 		while (true) {
-			CellPosition position = y * width_ + x;
+			CellPosition position = (CellPosition)y * width_ + x;
 			cell_x_[cell_key] = x;
 			cell_y_[cell_key] = y;
 			keys_[position] = cell_key;
@@ -96,7 +98,7 @@ class NumberLink {
 	    { return table_[GetCellKey(x, y)]; }
 	// Returns the key of the special order for the coordinate (x,y).
 	CellKey GetCellKey(const Distance x, const Distance y) const
-	    { return keys_[y * width_ + x]; }
+	    { return keys_[(CellPosition)y * width_ + x]; }
 
 	double Solve(const CellKey cell_key = 0) {
 		if (cell_key == 0) solved_ = false;
@@ -121,7 +123,8 @@ class NumberLink {
 			}
 			return 1.0;
 		}
-		// If this set has been seen
+		
+		// Connect successive cells if this sequence of mates has not been seen
 		const vector<CellKey> mate_tuple(mates_.begin() + start_[cell_key],
 		                                 mates_.begin() + cell_key);
 		const Hash mate_hash = GetHash(mate_tuple);
@@ -196,21 +199,30 @@ class NumberLink {
 	}
 
  private:
+	// Hash key to identify a sequence of CellKeys
 	typedef pair<long long, long long> Hash;
+	// The number of cells on the board
 	CellKey size_;
+	// History of modification
 	stack< pair<CellKey, CellKey> > mate_stack_;
+	// Map from a CellKey to a coordinate
 	vector<Distance> cell_x_, cell_y_;
+	// Store the numbers in the cells
 	vector<CellNumber> table_;
 	vector<CellKey> keys_, mates_, start_;
+	// Description of links on the board
 	vector<bool> connected_x_, connected_y_;
+	// Hash table to identify a sequence of CellKeys
 	vector< map<Hash, double> > memo_;
+	// Flag to know whether the problem has been solved
 	bool solved_;
 
+	// Get a hash key based on the XorShift algorithm
 	Hash GetHash(const vector<CellKey> &cell_keys) {
 		unsigned int x = 123456789, y = 362436069, z = 521288629, w = 88675123;
 		for (int i = 0; i < (int)cell_keys.size(); i++) {
 			unsigned int t = (x ^ (x << 11)); x = y; y = z; z = w;
-			w = (w ^ (w >> 19)) ^ (t ^ (t >> 8)) ^ (unsigned int)cell_keys[i];
+			w = (w ^ (w >> 19)) ^ (t ^ (t >> 8)) + (unsigned int)cell_keys[i];
 		}
 		Hash h;
 		h.first = ((unsigned long long)x << 32) | y;
@@ -218,6 +230,7 @@ class NumberLink {
 		return h;
 	}
 
+	// Change the table of mates in adding the history
 	int ChangeMates(const CellKey cell_key, const CellKey cell_value) {
 		int last_stack_size = mate_stack_.size();
 		CellKey last_value = mates_[cell_key];
@@ -228,11 +241,15 @@ class NumberLink {
 		return last_stack_size;
 	}
 
+	// Revert the table of mates using the history
 	void RevertMates(const size_t stack_size) {
 		for (; stack_size < mate_stack_.size(); mate_stack_.pop())
 		    mates_[mate_stack_.top().first] = mate_stack_.top().second;
 	}
 
+	// Connects cell_key1 and cell_key2 by a line. Returns false if it cannot
+	// connect the cells because of constraints. The table of mates must be
+	// reverted even if the cells cannot be connect correctly.
 	bool UniteMates(const CellKey cell_key1, const CellKey cell_key2) {
 		CellKey end1 = mates_[cell_key1], end2 = mates_[cell_key2];
 		// Cannot connect any branch
@@ -280,6 +297,7 @@ void ParseArguments(int *argc, char **argv) {
 int main(int argc, char **argv) {
 	ParseArguments(&argc, argv);
 	int width, height;
+	// Until the input ends or 0x0 is given
 	while (2 == scanf("%d%d", &width, &height) && width && height) {
 		NumberLink nl((int)width, (int)height);
 		nl.Initialize();
@@ -292,6 +310,7 @@ int main(int argc, char **argv) {
 		}
 		double solution_count = nl.Solve();
 		printf("# of solutions: ");
+		// Change an output format because of the precision of the double type
 		if (solution_count < 1e13) {
 			printf("%.0f\n", solution_count);
 		} else {

@@ -40,9 +40,9 @@ class NumberLink {
 	// The type of the number written in a cell
 	typedef char CellNumber;
 	// The type of the ID number of a cell
-	typedef int CellKey;
+	typedef short CellKey;
 	// The type of a coordinate represented by (y * width + x)
-	typedef int CellPosition;
+	typedef short CellPosition;
 	// The type of a distance such as width, height, x and y
 	typedef int Distance;
 	// The size of the NumberLink task
@@ -124,10 +124,11 @@ class NumberLink {
 		// If this set has been seen
 		const vector<CellKey> mate_tuple(mates_.begin() + start_[cell_key],
 		                                 mates_.begin() + cell_key);
-		if (!memo_[cell_key].count(mate_tuple)) {
-			memo_[cell_key][mate_tuple] = Connect(cell_key);
+		const Hash mate_hash = GetHash(mate_tuple);
+		if (!memo_[cell_key].count(mate_hash)) {
+			memo_[cell_key][mate_hash] = Connect(cell_key);
 		}
-		return memo_[cell_key][mate_tuple];
+		return memo_[cell_key][mate_hash];
 	}
 
 	double Connect(const CellKey cell_key) {
@@ -195,14 +196,27 @@ class NumberLink {
 	}
 
  private:
+	typedef pair<long long, long long> Hash;
 	CellKey size_;
 	stack< pair<CellKey, CellKey> > mate_stack_;
 	vector<Distance> cell_x_, cell_y_;
 	vector<CellNumber> table_;
 	vector<CellKey> keys_, mates_, start_;
 	vector<bool> connected_x_, connected_y_;
-	vector< map<vector<CellKey>, double> > memo_;
+	vector< map<Hash, double> > memo_;
 	bool solved_;
+
+	Hash GetHash(const vector<CellKey> &cell_keys) {
+		unsigned int x = 123456789, y = 362436069, z = 521288629, w = 88675123;
+		for (int i = 0; i < (int)cell_keys.size(); i++) {
+			unsigned int t = (x ^ (x << 11)); x = y; y = z; z = w;
+			w = (w ^ (w >> 19)) ^ (t ^ (t >> 8)) ^ (unsigned int)cell_keys[i];
+		}
+		Hash h;
+		h.first = ((unsigned long long)x << 32) | y;
+		h.second = ((unsigned long long)z << 32) | w;
+		return h;
+	}
 
 	int ChangeMates(const CellKey cell_key, const CellKey cell_value) {
 		int last_stack_size = mate_stack_.size();
